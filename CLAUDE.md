@@ -189,9 +189,14 @@ Common commands:
 
 ```bash
 bun install
-bun run index.ts <directory>
-bun test
+bun run index.ts <directory>   # run from the repo root; the path argument is the directory to watch
+bunx tsc --noEmit              # typecheck (tsconfig is noEmit; there is no build step)
+bun test                       # test runner works, but there are no test files yet
+bun test path/to/file.test.ts  # run a single test file once tests exist
 ```
+
+There is no lint step, no build step, and no `bin`/`start` script in `package.json`.
+`bun test` currently exits non-zero with "0 test files matching" — that is the absence of tests, not a broken setup.
 
 Prefer Bun APIs where they materially simplify the implementation, but do not rewrite working code merely to make it more Bun-specific.
 
@@ -255,7 +260,15 @@ This file should remain useful to an AI coding agent entering the repository wit
 
 At the time this file was written, the implementation is intentionally tiny.
 
-The core behavior lives in `index.ts`.
+The whole system is `index.ts` (~50 lines): parse one CLI argument, ensure `<target>/.snapshots` exists, then `chokidar.watch(target).on("change")` copies any changed `.excalidraw.svg` into that directory.
+
+Three properties of this are load-bearing and not obvious from reading a single line:
+
+* **Snapshot filenames are `<epochMillis>.<name>.<ext>`, timestamp first.** This makes lexical order equal chronological order, so a plain directory listing is already the timeline. Keep the timestamp leading if you change the naming.
+* **`.snapshots` lives inside the watched tree and is not excluded, yet does not feed back on itself.** Only `change` events are handled; each snapshot is written once, which fires `add`. Handling `add` or `all` — or ignoring the timestamp collision that makes two snapshots in the same millisecond overwrite each other — reintroduces a copy loop. Exclude `.snapshots` explicitly before broadening the event set.
+* **The target directory must already exist.** `mkdirSync` is non-recursive, so a missing target throws `ENOENT` rather than reporting a usable error.
+
+Non-matching files in the watched directory are ignored, so the trace is only ever `.excalidraw.svg` history.
 
 Do not infer architectural requirements from the size of the idea.
 
