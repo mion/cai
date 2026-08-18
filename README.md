@@ -1,2 +1,19 @@
-# cai
-The CAI (Cybernetic AI) is a harness to merge with superintelligence.
+# Overview
+
+CAI (Cybernetic AI): merge with superintelligence.
+
+## Getting Started
+
+To install dependencies:
+
+```bash
+bun install
+```
+
+To run:
+
+```bash
+bun run index.ts
+```
+
+This project was created using `bun init` in bun v1.3.12. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

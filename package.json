@@ -1,0 +1,15 @@
+{
+  "name": "cai",
+  "displayName": "Cybernetic AI",
+  "description": "Merge with superintelligence.",
+  "version": "0.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
