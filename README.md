@@ -23,6 +23,22 @@ You can then implement this kind of feature on top of it:
     - It can tell when you are unaware of some vendor that is worth knowing.
     - Etc.
 
+## How does it work?
+
+Let's say you have a "universe" directory, which is simply the parent directory of any Excalidraw files you will be using to think in:
+
+```
+ls ~/universe
+foo.excalidraw.svg
+bar.excalidraw.svg
+```
+
+You point the CAI at `~/universe` and it will start watching that directory:
+
+1. It creates a `~/universe/.snapshots` directory if there isn't one.
+2. It creates snapshots of the files in there, like `~/universe/.snapshots/1787087542871.foo.excalidraw.svg`
+3. From this basic snapshots directory, a timeline of deltas can be computed. Using the current state plus the timeline you get the "trajectory of cognition over time" which is the input for any "human-merged-with-machine cybernetic" features you can think of.
+
 ## Getting Started
 
 To install dependencies:
