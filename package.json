@@ -2,7 +2,7 @@
   "name": "cai",
   "displayName": "Cybernetic AI",
   "description": "Merge with superintelligence.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "module": "index.ts",
   "type": "module",
   "private": true,

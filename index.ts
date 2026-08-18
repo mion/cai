@@ -41,7 +41,7 @@ function main(args: string[]): void {
         if (isTargetExtension(path)) {
             log("File changed", { path, size: stats ? stats.size + " bytes" : "N/A" });
             const { name, ext } = parse(path);
-            copy(path, join(snapshotsDirPath, name + "." + Date.now() + ext));
+            copy(path, join(snapshotsDirPath, Date.now() + "." + name + ext));
         }
     });
 }
