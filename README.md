@@ -1,56 +1,224 @@
-# Overview
+# CAI — Cybernetic AI
 
-_CAI (Cybernetic AI): merge with superintelligence._
+> Merge with superintelligence.
 
-Imagine you are working on an Excalidraw file as a whiteboard, e.g.: `~/universe/whiteboard.excalidraw.svg`
+CAI is an experiment in building a closed feedback loop between human thought and AI.
 
-Assume that you do **all** of your thinking on that same file. As you change the file, `cai` takes snapshots of it, then calculates the difference between each to create a timeline of micro-deltas which will then get fed into an AI.
+The basic idea is simple: instead of giving an AI only the final result of your thinking, give it a trace of how your thinking evolved over time.
 
-The more explicit your thinking is, the better the signal will be. What is being modeled? The *trajectory of your cognition*. The Excalidraw artifact is basically telemetry leaking out of your cognitive process. This timeline of micro-deltas is way more informative of your thinking than just the final board: the final board says "here’s what the user thinks," delta history says "here’s how the user arrived there."
+CAI currently uses Excalidraw as the first source of that trace.
 
-Why is this useful?
+Imagine you use an Excalidraw file as a persistent whiteboard:
 
-You can then implement this kind of feature on top of it:
-
-1. **The AI can train you.** Like a chess coach watching your moves:
-    - Are you thinking deeply and deliberately? The AI can now reward that just-in-time.
-    - Are you jumping to a solution without understanding the problem? A slight punishment or warning.
-    - Are you working on the right thing at all? It can infer the goal you are actually seeking (not what you say, but what you do) and detect whether it deviates from your stated intents (if any), suggesting a break to review it and take another course of action: for instance, in the case of vague intent, it could be very well to stop whatever it is you are doing and define it.
-    - Is there something which you believe is not true and it’s predictably gonna lead you astray? It can pick that up.
-    - Are there mental models which you are completely unaware of that could be extremely useful? Like Expected Value, Opportunity Window, Trade-off, etc.
-2. **The AI can work with you.**
-    - It can tell when you are doing something manual that you shouldn't.
-    - It can tell when you are unaware of some vendor that is worth knowing.
-    - Etc.
-
-## How does it work?
-
-Let's say you have a "universe" directory, which is simply the parent directory of any Excalidraw files you will be using to think in:
-
-```
-ls ~/universe
-foo.excalidraw.svg
-bar.excalidraw.svg
+```text
+~/universe/
+    whiteboard.excalidraw.svg
 ```
 
-You point the CAI at `~/universe` and it will start watching that directory:
+As you think, you add things, delete things, reorganize ideas, explore alternatives, abandon branches, revise assumptions, and eventually make decisions.
 
-1. It creates a `~/universe/.snapshots` directory if there isn't one.
-2. It creates snapshots of the files in there, like `~/universe/.snapshots/1787087542871.foo.excalidraw.svg`
-3. From this basic snapshots directory, a timeline of deltas can be computed. Using the current state plus the timeline you get the "trajectory of cognition over time" which is the input for any "human-merged-with-machine cybernetic" features you can think of.
+CAI observes those changes by taking snapshots of the file over time.
 
-## Getting Started
+From those snapshots, it can construct a timeline of micro-deltas representing the evolution of the whiteboard.
 
-To install dependencies:
+The interesting input to the AI is therefore not merely:
+
+```text
+current state
+```
+
+but:
+
+```text
+previous states
+    +
+changes over time
+    +
+current state
+```
+
+In other words:
+
+**the trajectory of cognition.**
+
+A final whiteboard tells an AI what you think.
+
+Its history can provide evidence about how you arrived there.
+
+## Why?
+
+Most AI interfaces operate roughly like this:
+
+```text
+human asks question
+        ↓
+AI produces answer
+        ↓
+human consumes answer
+```
+
+CAI is exploring something different:
+
+```text
+human acts / thinks
+        ↓
+observable trace
+        ↓
+AI interprets the trajectory
+        ↓
+selective intervention
+        ↓
+human continues acting / thinking
+        ↺
+```
+
+The goal is not simply to have an AI that answers questions.
+
+The goal is to investigate what becomes possible when an AI can observe enough of a person's ongoing cognitive process to provide useful feedback at the right moment.
+
+The AI should ideally behave less like an oracle and more like a formidable trainer or collaborator.
+
+## What could this enable?
+
+### AI as trainer
+
+An AI observing the trajectory rather than only the result may be able to notice things such as:
+
+* Are you thinking deeply and deliberately, or merely producing activity?
+* Are you jumping to a solution before understanding the problem?
+* Are you repeatedly exploring alternatives without committing?
+* Are you working toward your stated intent, or has your behavior drifted toward something else?
+* Are you relying on an assumption that appears likely to lead you astray?
+* Is there a useful mental model you're failing to consider?
+* Would Expected Value, Opportunity Cost, a Trade-off analysis, inversion, or another reasoning tool materially improve the decision?
+
+The hard problem is calibration.
+
+A useful system cannot constantly interrupt, nag, distract, or think on behalf of the user.
+
+The intervention must be worth the interruption.
+
+### AI as collaborator
+
+The same telemetry could eventually allow an AI to recognize opportunities to help directly.
+
+For example:
+
+* noticing repetitive work that should be automated;
+* recognizing that an existing tool or library solves a problem being approached manually;
+* retrieving relevant information at the moment it becomes useful;
+* helping execute an already-formed intent without taking over the reasoning that should remain with the human.
+
+The distinction matters:
+
+**CAI should augment cognition, not quietly replace it.**
+
+## Excalidraw is the first sensor, not the product
+
+CAI is currently built around Excalidraw because it provides a simple way to externalize thought into a machine-observable artifact.
+
+But CAI is not fundamentally an Excalidraw tool.
+
+The more general primitive is:
+
+```text
+human activity
+    ↓
+observable trace
+    ↓
+temporal interpretation
+    ↓
+intervention
+    ↓
+subsequent human activity
+```
+
+Excalidraw snapshots are simply the first instrumentation layer for experimenting with this loop.
+
+Other sources of useful signal may come later.
+
+## Current state
+
+CAI is extremely early.
+
+Right now it does one useful thing:
+
+**it records snapshots of changing Excalidraw files.**
+
+Given a directory such as:
+
+```text
+~/universe/
+    foo.excalidraw.svg
+    bar.excalidraw.svg
+```
+
+CAI watches it for changes.
+
+When an `.excalidraw.svg` file changes, CAI copies the new version into:
+
+```text
+~/universe/.snapshots/
+```
+
+producing files such as:
+
+```text
+1787087542871.foo.excalidraw.svg
+1787087549123.foo.excalidraw.svg
+1787087554812.bar.excalidraw.svg
+```
+
+This intentionally primitive filesystem representation gives us enough temporal information to begin experimenting without prematurely designing infrastructure for a problem we don't understand yet.
+
+The next important milestone is not a sophisticated architecture.
+
+It is the **minimum useful closed loop**:
+
+```text
+observe → interpret → intervene → observe again
+```
+
+Everything else can evolve from evidence gathered there.
+
+## Getting started
+
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-To run:
+Run CAI against a directory:
 
 ```bash
-bun run index.ts ~/my-universe-directory
+bun run index.ts ~/universe
 ```
 
-This project was created using `bun init` in bun v1.3.12. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Then edit any `.excalidraw.svg` file inside that directory.
+
+CAI will create a `.snapshots` directory and record subsequent versions there.
+
+## Development philosophy
+
+CAI is currently an experiment, not a platform.
+
+Prefer:
+
+* small experiments over speculative architecture;
+* observable behavior over abstractions we merely expect to need;
+* end-to-end feedback loops over infrastructure;
+* real usage over imagined requirements;
+* reversible decisions over premature commitments.
+
+The architecture should emerge from attempts to make the cybernetic loop genuinely useful.
+
+The first question is not:
+
+> How do we build the ultimate cognitive architecture?
+
+It is:
+
+> What is the smallest thing we can build that produces enough useful feedback that we actually want to keep using it?
+
+Then we iterate.
