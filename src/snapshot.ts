@@ -6,7 +6,7 @@ import chokidar from "chokidar";
 const PKG = await import("../package.json");
 
 function isTargetExtension(path: string): boolean {
-    return path.endsWith(".excalidraw.svg");
+    return path.endsWith(".excalidraw");
 }
 
 function copy(src: string, dest: string): void {
