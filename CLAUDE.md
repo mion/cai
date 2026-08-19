@@ -66,7 +66,7 @@ Excalidraw is currently the easiest way to obtain a structured, evolving externa
 The current implementation:
 
 1. watches a target directory;
-2. detects changes to `.excalidraw.svg` files;
+2. detects changes to `.excalidraw` files;
 3. creates a `.snapshots` directory;
 4. copies changed files there using timestamped filenames.
 
@@ -189,14 +189,16 @@ Common commands:
 
 ```bash
 bun install
-bun run index.ts <directory>   # run from the repo root; the path argument is the directory to watch
-bunx tsc --noEmit              # typecheck (tsconfig is noEmit; there is no build step)
-bun test                       # test runner works, but there are no test files yet
-bun test path/to/file.test.ts  # run a single test file once tests exist
+bun run src/snapshot.ts <directory>   # watch a directory and record snapshots
+bun run src/delta.ts <directory>      # print the trajectory from that directory's .snapshots
+bunx tsc --noEmit                     # typecheck (tsconfig is noEmit; there is no build step)
+bun test                              # run tests
+bun test src/delta.test.ts            # run a single test file
 ```
 
+Run these from the repo root; the path argument is the directory being watched (the parent of `.snapshots`), not the snapshots directory itself.
+
 There is no lint step, no build step, and no `bin`/`start` script in `package.json`.
-`bun test` currently exits non-zero with "0 test files matching" — that is the absence of tests, not a broken setup.
 
 Prefer Bun APIs where they materially simplify the implementation, but do not rewrite working code merely to make it more Bun-specific.
 
@@ -260,15 +262,30 @@ This file should remain useful to an AI coding agent entering the repository wit
 
 At the time this file was written, the implementation is intentionally tiny.
 
-The whole system is `index.ts` (~50 lines): parse one CLI argument, ensure `<target>/.snapshots` exists, then `chokidar.watch(target).on("change")` copies any changed `.excalidraw.svg` into that directory.
+Two small programs, each runnable on its own:
 
-Three properties of this are load-bearing and not obvious from reading a single line:
+* `src/snapshot.ts` — parse one CLI argument, ensure `<target>/.snapshots` exists, then `chokidar.watch(target).on("change")` copies any changed `.excalidraw` file into it.
+* `src/delta.ts` — read `<target>/.snapshots` in timestamp order and print the transitions between consecutive snapshots as a timeline.
 
-* **Snapshot filenames are `<epochMillis>.<name>.<ext>`, timestamp first.** This makes lexical order equal chronological order, so a plain directory listing is already the timeline. Keep the timestamp leading if you change the naming.
+The two communicate only through the filesystem. There is no shared state, no schema and no runtime coupling.
+
+Properties that are load-bearing and not obvious from reading a single line:
+
+* **Snapshot filenames are `<epochMillis>.<name>.<ext>`, timestamp first.** This makes lexical order equal chronological order, so a plain directory listing is already the timeline. `delta.ts` parses the timestamp back out of the prefix, so keep it leading.
 * **`.snapshots` lives inside the watched tree and is not excluded, yet does not feed back on itself.** Only `change` events are handled; each snapshot is written once, which fires `add`. Handling `add` or `all` — or ignoring the timestamp collision that makes two snapshots in the same millisecond overwrite each other — reintroduces a copy loop. Exclude `.snapshots` explicitly before broadening the event set.
 * **The target directory must already exist.** `mkdirSync` is non-recursive, so a missing target throws `ENOENT` rather than reporting a usable error.
+* **Excalidraw element `id`s are stable across saves**, which is what makes deltas a keyed comparison rather than a text diff. This is the reason the trace is worth keeping as JSON rather than exported SVG.
 
-Non-matching files in the watched directory are ignored, so the trace is only ever `.excalidraw.svg` history.
+### Reading deltas honestly
+
+`delta.ts` exists to describe *acts*, not field changes. Every filter in it was derived from real snapshots, and removing one reintroduces noise that drowns the signal:
+
+* `version`, `versionNonce`, `updated`, `seed` and `index` change on almost every save and mean nothing. `index` in particular is fractional z-order bookkeeping that churns whenever anything is grouped.
+* Excalidraw stores a labelled shape as **two** elements — the shape, plus a text element bound by `containerId`. Describing both double-reports every act, so bound text is always described as its container and never reports its own move, resize or grouping.
+* Editing text auto-resizes its box, so a `width` change accompanying a text edit is an artifact rather than a resize the user performed.
+* Transitions with no significant events are skipped, and gaps over 30 minutes are marked as session breaks. Pauses and reversals are signal, not noise to be smoothed away.
+
+`src/delta.test.ts` pins these rules. If a change to the vocabulary makes those tests fail, the question to ask is whether the timeline still describes what a human would say they did.
 
 Do not infer architectural requirements from the size of the idea.
 

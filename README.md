@@ -12,7 +12,7 @@ Imagine you use an Excalidraw file as a persistent whiteboard:
 
 ```text
 ~/universe/
-    whiteboard.excalidraw.svg
+    whiteboard.excalidraw
 ```
 
 As you think, you add things, delete things, reorganize ideas, explore alternatives, abandon branches, revise assumptions, and eventually make decisions.
@@ -141,21 +141,21 @@ Other sources of useful signal may come later.
 
 CAI is extremely early.
 
-Right now it does one useful thing:
+Right now it does two useful things:
 
-**it records snapshots of changing Excalidraw files.**
+**it records snapshots of changing Excalidraw files**, and **it turns those snapshots into a readable timeline of what changed.**
 
 Given a directory such as:
 
 ```text
 ~/universe/
-    foo.excalidraw.svg
-    bar.excalidraw.svg
+    foo.excalidraw
+    bar.excalidraw
 ```
 
 CAI watches it for changes.
 
-When an `.excalidraw.svg` file changes, CAI copies the new version into:
+When an `.excalidraw` file changes, CAI copies the new version into:
 
 ```text
 ~/universe/.snapshots/
@@ -164,12 +164,31 @@ When an `.excalidraw.svg` file changes, CAI copies the new version into:
 producing files such as:
 
 ```text
-1787087542871.foo.excalidraw.svg
-1787087549123.foo.excalidraw.svg
-1787087554812.bar.excalidraw.svg
+1787087542871.foo.excalidraw
+1787087549123.foo.excalidraw
+1787087554812.bar.excalidraw
 ```
 
 This intentionally primitive filesystem representation gives us enough temporal information to begin experimenting without prematurely designing infrastructure for a problem we don't understand yet.
+
+Snapshots on their own are just states, so the second step reads them in order and describes the transitions:
+
+```text
+[+2m] 11:46:39 PM
+    created text "what is "a tool" ?"
+    edited text "what is "perfect" ?" (was "what is "the perfect Tool" ?")
+
+--- 3.3h away ---
+
+[+3.3h] 3:05:40 AM
+    created rectangle (×3)
+    created arrow
+    deleted text "Compression"
+```
+
+Because Excalidraw gives every element a stable `id`, this is a keyed comparison rather than a text diff: we can say *this label was rewritten* or *this branch was deleted*, rather than merely *the file changed*.
+
+The pauses are part of the signal. So are the reversals.
 
 The next important milestone is not a sophisticated architecture.
 
@@ -192,12 +211,18 @@ bun install
 Run CAI against a directory:
 
 ```bash
-bun run index.ts ~/universe
+bun run src/snapshot.ts ~/universe
 ```
 
-Then edit any `.excalidraw.svg` file inside that directory.
+Then edit any `.excalidraw` file inside that directory.
 
 CAI will create a `.snapshots` directory and record subsequent versions there.
+
+Once you have at least two snapshots, read the trajectory back:
+
+```bash
+bun run src/delta.ts ~/universe
+```
 
 ## Development philosophy
 
