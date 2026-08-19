@@ -262,12 +262,14 @@ This file should remain useful to an AI coding agent entering the repository wit
 
 At the time this file was written, the implementation is intentionally tiny.
 
-Two small programs, each runnable on its own:
+Two programs, each runnable on its own, plus two helper modules:
 
 * `src/snapshot.ts` — parse one CLI argument, ensure `<target>/.snapshots` exists, then `chokidar.watch(target).on("change")` copies any changed `.excalidraw` file into it.
-* `src/delta.ts` — read `<target>/.snapshots` in timestamp order and print the transitions between consecutive snapshots as a timeline.
+* `src/delta.ts` — read `<target>/.snapshots` in timestamp order, print an opening scene, then describe each transition.
+* `src/scene.ts` — geometry, colour naming and element naming for a single scene. Pure functions over elements.
+* `src/text.ts` — describing text changes without spending the context window on the text.
 
-The two communicate only through the filesystem. There is no shared state, no schema and no runtime coupling.
+The two programs communicate only through the filesystem. There is no shared state, no schema and no runtime coupling.
 
 Properties that are load-bearing and not obvious from reading a single line:
 
@@ -281,11 +283,33 @@ Properties that are load-bearing and not obvious from reading a single line:
 `delta.ts` exists to describe *acts*, not field changes. Every filter in it was derived from real snapshots, and removing one reintroduces noise that drowns the signal:
 
 * `version`, `versionNonce`, `updated`, `seed` and `index` change on almost every save and mean nothing. `index` in particular is fractional z-order bookkeeping that churns whenever anything is grouped.
-* Excalidraw stores a labelled shape as **two** elements — the shape, plus a text element bound by `containerId`. Describing both double-reports every act, so bound text is always described as its container and never reports its own move, resize or grouping.
 * Editing text auto-resizes its box, so a `width` change accompanying a text edit is an artifact rather than a resize the user performed.
 * Transitions with no significant events are skipped, and gaps over 30 minutes are marked as session breaks. Pauses and reversals are signal, not noise to be smoothed away.
 
-`src/delta.test.ts` pins these rules. If a change to the vocabulary makes those tests fail, the question to ask is whether the timeline still describes what a human would say they did.
+**A shape can be named two different ways, and both occur in real files.** Excalidraw binds a label inside a shape via `containerId`, but a user can equally type a caption underneath and group the two. Either way the text is that shape's *name*, not an idea of its own, so it is described as the shape and does not report its own move, resize or grouping. A caption only names the shape it sits closest to; other members of the same group are reported as `(in "Name")`, because calling them by that name would assert something the file does not say.
+
+### Arrangement is meaning
+
+On a whiteboard, placement *is* semantics: what sits inside what, what touches, what lines up, what an arrow joins. None of that is stated in the file, so `scene.ts` derives it and `delta.ts` reports what changed. Saying "moved rectangle" without saying where destroys most of the available signal.
+
+Constraints that keep this useful rather than overwhelming:
+
+* Relations are computed **only for elements the user touched**, so output is proportional to the edit and not to the size of the board.
+* **One relation per pair**, strongest first (`inside` > `contains` > `overlaps` > `near` > `aligned`). Three per element.
+* **Containment and overlap are geometric facts that grouping does not change.** Suppressing same-group pairs wholesale made grouping a box with its contents report "no longer contains", which was simply false. Only *proximity* between group members is suppressed.
+* **Alignment is nearly worthless on a snapped grid** — in a tidy diagram everything aligns with everything. It is reported at most once per element, and only when a move established it.
+* A caption is not an independent object, so proximity to one is never reported; the shape it names is reported instead.
+
+### Long text
+
+Whiteboards can hold paragraphs, and sending each version whole would cost more than the trace is worth. `text.ts` sends the *edit*, not the document:
+
+* text appears with an **envelope** — head, tail and `[N chars, N words, N lines]`;
+* a change is described by trimming the common prefix and suffix to isolate the changed span, classified as `appended`, `prepended`, `cut`, `rewrote` or `revised N% in`. Real edits are one contiguous span, so this is cheap and usually exact;
+* anything too long is cut to a budget and marked `…[+N chars]`. **Elision is always marked** — the header explains how to read the full text back out of the snapshot by element id. Never silently truncate, and never lossily summarise: the discarded part is exactly what we might be looking for;
+* every wording is digested, so returning to text abandoned earlier reports `restored wording from step N`. Reversion is one of the few directly observable signs of circular reasoning.
+
+`src/delta.test.ts`, `src/scene.test.ts` and `src/text.test.ts` pin these rules. If a change to the vocabulary makes them fail, the question to ask is whether the timeline still describes what a human would say they did.
 
 Do not infer architectural requirements from the size of the idea.
 

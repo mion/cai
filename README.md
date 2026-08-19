@@ -174,21 +174,28 @@ This intentionally primitive filesystem representation gives us enough temporal 
 Snapshots on their own are just states, so the second step reads them in order and describes the transitions:
 
 ```text
-[+2m] 11:46:39 PM
-    created text "what is "a tool" ?"
-    edited text "what is "perfect" ?" (was "what is "the perfect Tool" ?")
-
---- 3.3h away ---
-
-[+3.3h] 3:05:40 AM
-    created rectangle (×3)
-    created arrow
-    deleted text "Compression"
+step 16 [+3.2h] 03:05:40
+  + #dXOI rectangle @700,900 200x100 black on translucent-white
+        now contains rectangle #PTqG · now contains rectangle #KpFj · now contains arrow #gJzV
+  + #gJzV arrow @781,940 38x0 black connects rectangle #PTqG → rectangle #KpFj
+        now inside rectangle #dXOI · now 1px from rectangle #PTqG
+  ~ #KpFj rectangle: moved down +0,+200 (200px) → @820,920 60x60 · resized 120x60 → 60x60
+        (area ×0.50) · ungrouped · now inside rectangle #dXOI
 ```
 
 Because Excalidraw gives every element a stable `id`, this is a keyed comparison rather than a text diff: we can say *this label was rewritten* or *this branch was deleted*, rather than merely *the file changed*.
 
-The pauses are part of the signal. So are the reversals.
+On a whiteboard, arrangement is meaning. Putting one box inside another, moving two ideas next to each other, joining them with an arrow, turning something red — these are acts of thought, and none of them are stated in the file. So CAI derives them from the geometry: containment, overlap, proximity, alignment, arrow endpoints and named colours.
+
+Text is handled by describing the edit rather than the document, so a whiteboard full of paragraphs stays affordable:
+
+```text
+~ #essa text "The core difficulty is knowing w…": revised 89% in (+11w -8w 1529→1560 chars)
+      -"never shuts up is worse than no coach."
+      +"interrupts every move destroys the very thinking it means to sharpen."
+```
+
+The pauses are part of the signal. So are the reversals — returning to wording you had abandoned is reported as such.
 
 The next important milestone is not a sophisticated architecture.
 
