@@ -23,7 +23,7 @@ function main(args: string[]): void {
     log(`${PKG.displayName} v${PKG.version}`);
 
     if (args.length !== 1) {
-        log("USAGE: cai [path to directory]");
+        log("USAGE: bun run src/snapshot.ts [path to directory]");
         process.exit(1);
     }
 
