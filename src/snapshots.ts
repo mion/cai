@@ -3,7 +3,7 @@ import { join, parse, resolve } from "node:path";
 import { copyFile, existsSync, mkdirSync } from "node:fs";
 import chokidar from "chokidar";
 
-const PKG = await import("./package.json");
+const PKG = await import("../package.json");
 
 function isTargetExtension(path: string): boolean {
     return path.endsWith(".excalidraw.svg");
